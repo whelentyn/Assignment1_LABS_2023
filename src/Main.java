@@ -3,12 +3,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
-    List<Customer> customerList;
+    static List<Customer> customerList;
     static List<Order> orderList;
     static List<Product> productList;
 
@@ -50,6 +52,33 @@ public class Main {
                 .sorted(Comparator.comparing(Order::getOrderDate).reversed())
                 .limit(3)
                 .collect(Collectors.toList());
+
+        //7. get the order with the highest total price
+        Optional<Order> highestTotalPriceOrder = orderList.stream().
+                max(Comparator.comparing(order -> order.getProducts().stream().
+                        mapToDouble(Product::getPrice).sum()));
+
+        //8. calculate order average payment placed on 14-Mar-2021
+        LocalDate auxDate = LocalDate.of(2021, 3, 14);
+        double avgPayment = orderList.stream().
+                filter(order -> order.getOrderDate().equals(auxDate)).
+                mapToDouble(order -> order.getProducts().stream().
+                        mapToDouble(Product::getPrice).sum()).
+                average().orElse(0.0);
+
+        //9. get the most expensive product by category
+        Map<String, Optional<Product>> mostExpensiveProductByCategory = productList.stream().
+                collect(Collectors.groupingBy(Product::getCategory,
+                        Collectors.maxBy(Comparator.comparing(Product::getPrice))));
+
+        //10. get the the product that was ordered the highest number of times
+        Map<Product, Long> productCount = orderList.stream().
+                flatMap(order -> order.getProducts().stream()).
+                collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        Product mostOrderedProduct = productCount.entrySet().stream().
+                max(Map.Entry.comparingByValue()).
+                map(Map.Entry::getKey).orElse(null);
 
     }
 }
